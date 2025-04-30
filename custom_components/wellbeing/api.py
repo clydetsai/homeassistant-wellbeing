@@ -13,6 +13,7 @@ from homeassistant.const import (
     CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
     Platform,
     EntityCategory,
+    UnitOfTime,
 )
 from homeassistant.helpers.typing import UNDEFINED
 from pyelectroluxgroup.api import ElectroluxHubAPI
@@ -53,14 +54,26 @@ class Model(str, Enum):
     UltimateHome700 = "UltimateHome 700"  # Dehumidifier
     VacuumHygienic700 = "Gordias"  # HYGIENIC700
 
-
+##clyde##
 class WorkMode(str, Enum):
     OFF = "PowerOff"
-    MANUAL = "Manual"
+    #MANUAL = "Manual"
     UNDEFINED = "Undefined"
     SMART = "Smart"
-    QUITE = "Quiet"
-    AUTO = "Auto"
+    #QUITE = "Quiet"
+    #AUTO = "Auto"
+    MANUAL = "MANUAL"
+    AUTO = "AUTO"
+    QUIET = "QUIET"
+    AUTOMATIC = "AUTOMATIC"
+    POWERON = "POWERON"
+    
+##clyde##
+class OperationFunction(str, Enum):
+    COMPLETE = "COMPLETE"
+    CONTINUOUS = "CONTINUOUS"
+    DRY = "DRY"
+    PURIFY = "PURIFY"
 
 
 class LouverSwingMode(str, Enum):
@@ -138,7 +151,15 @@ class ApplianceBinary(ApplianceEntity):
 
     @property
     def state(self):
-        return self._state in ["enabled", True, "Connected", "on"]
+        ##clyde##
+        return self._state in ["enabled", True, "Connected", "on", "YES", "ON", "RUNNING", "connected", "DISPLAY_LIGHT_1"]
+
+##clyde##
+class ApplianceSelect(ApplianceEntity):
+    entity_type: int = Platform.SELECT
+
+    def __init__(self, name, attr) -> None:
+        super().__init__(name, attr)
 
 
 class Appliance:
@@ -166,7 +187,8 @@ class Appliance:
                 device_class=SensorDeviceClass.PM25,
                 state_class=SensorStateClass.MEASUREMENT,
             ),
-            ApplianceSensor(name="Hepa Filter", attr="hepaFilterState", device_class=SensorDeviceClass.ENUM),
+            ApplianceSensor(name="Hepa Filter", attr="hepaFilterState", device_class=SensorDeviceClass.ENUM, entity_category=EntityCategory.DIAGNOSTIC),
+            ApplianceSensor(name="Hepa Filter Life Time", attr="hepaFilterLifeTime", entity_category=EntityCategory.DIAGNOSTIC, unit=UnitOfTime.SECONDS, device_class=SensorDeviceClass.DURATION),
             ApplianceSensor(name="Operative Mode", attr="operativeMode", device_class=SensorDeviceClass.ENUM),
             ApplianceSensor(name="Air Quality", attr="airQualityState", device_class=SensorDeviceClass.ENUM),
             ApplianceSensor(
@@ -190,23 +212,42 @@ class Appliance:
                 device_class=SensorDeviceClass.HUMIDITY,
                 state_class=SensorStateClass.MEASUREMENT,
             ),
-            ApplianceBinary(
-                name="Connection State",
-                attr="connectivityState",
-                device_class=BinarySensorDeviceClass.CONNECTIVITY,
-                entity_category=EntityCategory.DIAGNOSTIC,
-            ),
+            ##clyde##
+            #ApplianceBinary(
+            #    name="Connection State",
+            #    attr="connectivityState",
+            #    device_class=BinarySensorDeviceClass.CONNECTIVITY,
+            #    entity_category=EntityCategory.DIAGNOSTIC,
+            #),
+            ##clyde##
             ApplianceBinary(name="Clean Air", attr="cleanAirMode"),
+            ApplianceBinary(name="Display Light", attr="displayLight"),
             ApplianceBinary(name="Vertical Swing", attr="verticalSwing"),
-            ApplianceBinary(name="Water Tank Full", attr="waterTankFull"),
-            ApplianceBinary(name="Sppliance State", attr="applianceState"),
-            ApplianceBinary(name="UI Lock", attr="uiLockMode", device_class=BinarySensorDeviceClass.LOCK),
+            ApplianceBinary(name="Water Tank Full", attr="waterTankFull", entity_category=EntityCategory.DIAGNOSTIC),
+            ApplianceBinary(name="Appliance State", attr="applianceState", device_class=BinarySensorDeviceClass.RUNNING),
+            #ApplianceBinary(name="UI Lock", attr="uiLockMode", device_class=BinarySensorDeviceClass.LOCK),
+            ApplianceBinary(name="UI Lock", attr="uiLockMode"),
             ApplianceSensor(
                 name="Target Humidity",
                 attr="targetHumidity",
+                unit=PERCENTAGE,
+                device_class=SensorDeviceClass.HUMIDITY,
             ),
-            ApplianceSensor(name="Fan Speed Setting", attr="fanSpeedSetting", device_class=SensorDeviceClass.ENUM),
+            
+            ##clyde##
+            #ApplianceSensor(name="Fan Speed Setting", attr="fanSpeedSetting", device_class=SensorDeviceClass.ENUM),
+            ApplianceFan(name="Fan Speed Setting", attr="fanSpeedSetting"),
             ApplianceSensor(name="Fan Speed State", attr="fanSpeedState", device_class=SensorDeviceClass.ENUM),
+            #ApplianceFan(name="Fan Speed State", attr="fanSpeedState"),
+            ApplianceSelect(name="Operation Function", attr="mode"),
+            
+            ApplianceSensor(name="Alerts", attr="alerts", device_class=SensorDeviceClass.ENUM, entity_category=EntityCategory.DIAGNOSTIC),
+            ApplianceSensor(name="SW Version", attr="applianceUiSwVersion", device_class=SensorDeviceClass.ENUM, entity_category=EntityCategory.DIAGNOSTIC),
+            #ApplianceSensor(name="Network Interface", attr="networkInterface", device_class=SensorDeviceClass.ENUM, entity_category=EntityCategory.DIAGNOSTIC),
+            
+            
+            
+
         ]
 
         pure500_entities = [
@@ -450,6 +491,10 @@ class Appliance:
             self.firmware = data.get("applianceUiSwVersion")
         if "Workmode" in data:
             self.mode = WorkMode(data.get("Workmode"))
+        ##clyde##
+        if "operativeMode" in data:
+            self.mode = WorkMode(data.get("operativeMode"))
+
         if "LouverSwingWorkmode" in data:
             self.louver_swing_mode = LouverSwingMode(data.get("LouverSwing"))
         if "powerMode" in data:
@@ -464,6 +509,9 @@ class Appliance:
     def preset_modes(self) -> list[WorkMode]:
         if self.model == Model.Muju:
             return [WorkMode.SMART, WorkMode.QUITE, WorkMode.MANUAL, WorkMode.OFF]
+        ##clyde##
+        if self.model == Model.UltimateHome700:
+            return [WorkMode.QUIET, WorkMode.MANUAL, WorkMode.AUTOMATIC]
         return [WorkMode.AUTO, WorkMode.MANUAL, WorkMode.OFF]
 
     def work_mode_from_preset_mode(self, preset_mode: str | None) -> WorkMode:
@@ -471,6 +519,9 @@ class Appliance:
             return WorkMode(preset_mode)
         if self.model == Model.Muju:
             return WorkMode.SMART
+        ##clyde##
+        if self.model == Model.UltimateHome700:
+            return WorkMode.AUTOMATIC
         return WorkMode.AUTO
 
     @property
@@ -496,6 +547,10 @@ class Appliance:
             return 1, 9
         if self.model == Model.PM700:
             return 1, 5
+
+        ##clyde##
+        if self.model == Model.UltimateHome700:
+            return 1, 3
 
         return 0, 0
 
@@ -533,6 +588,10 @@ class WellbeingApiClient:
         """Sample API Client."""
         self._api_appliances: dict[str, ApiAppliance] = {}
         self._hub = hub
+        ##import from ezoushen##
+        self._model_mapping = {
+            "DH": "UltimateHome 700",  # Map dehumidifier type to proper model name
+        }
 
     async def async_get_appliances(self) -> Appliances:
         """Get data from the API."""
@@ -544,7 +603,10 @@ class WellbeingApiClient:
         for appliance in (appliance for appliance in appliances):
             await appliance.async_update()
 
-            model_name = appliance.type
+            ##import from ezoushen##
+            #model_name = appliance.type
+            model_name = self._model_mapping.get(appliance.type, appliance.type)
+            
             appliance_id = appliance.id
             appliance_name = appliance.name
 
@@ -606,6 +668,18 @@ class WellbeingApiClient:
         if appliance is None:
             _LOGGER.error(f"Failed to set fan speed for appliance with id {pnc_id}")
             return
+        ##clyde##
+        _LOGGER.debug(f"####appliance.type={appliance.type}")
+        if self._model_mapping.get(appliance.type, appliance.type) == Model.UltimateHome700:
+            _LOGGER.debug(f"####model is ultimatehome700, command changing...")
+            if level == 3:
+                data = {"fanSpeedSetting": "HIGH"}
+            elif level == 2:
+                data = {"fanSpeedSetting": "MIDDLE"}
+            else:
+                data = {"fanSpeedSetting": "LOW"}
+        
+        _LOGGER.debug(f"####command: {data}")
 
         result = await appliance.send_command(data)
         _LOGGER.debug(f"Set Fan Speed: {result}")
@@ -616,6 +690,19 @@ class WellbeingApiClient:
         if appliance is None:
             _LOGGER.error(f"Failed to set work mode for appliance with id {pnc_id}")
             return
+
+        ##clyde##
+        _LOGGER.debug(f"####appliance.type={appliance.type}")
+        if self._model_mapping.get(appliance.type, appliance.type) == Model.UltimateHome700:
+            _LOGGER.debug(f"####model is ultimatehome700, command changing...")
+            if mode.value == WorkMode.OFF:
+                data = {"executeCommand": "OFF"}
+            elif mode.value == WorkMode.POWERON:
+                data = {"executeCommand": "ON"}
+            else:
+                data = {"operativeMode": mode.value}
+        
+        _LOGGER.debug(f"####command: {data}")
 
         result = await appliance.send_command(data)
         _LOGGER.debug(f"Set work mode: {result}")
@@ -631,3 +718,14 @@ class WellbeingApiClient:
 
         await appliance.send_command(data)
         _LOGGER.debug(f"Set {feature} State to {state}")
+
+    ##clyde##
+    async def set_operation_function(self, pnc_id: str, mode: str):
+        data = {"mode": mode}
+        appliance = self._api_appliances.get(pnc_id, None)
+        if appliance is None:
+            _LOGGER.error(f"Failed to set work mode for appliance with id {pnc_id}")
+            return
+        _LOGGER.debug(f"####command: {data}")
+        await appliance.send_command(data)
+

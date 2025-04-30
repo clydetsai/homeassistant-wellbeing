@@ -10,7 +10,10 @@ async def async_setup_entry(hass, entry, async_add_devices):
     """Setup switch platform."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
     appliances = coordinator.data.get("appliances", None)
-    capabilities = ["Ionizer", "UILight", "SafetyLock"]
+    
+    ##clyde##
+    #capabilities = ["Ionizer", "UILight", "SafetyLock"]
+    capabilities = ["Ionizer", "UILight", "SafetyLock", "cleanAirMode", "uiLockMode", "verticalSwing", "displayLight"]
 
     if appliances is not None:
         for pnc_id, appliance in appliances.appliances.items():
@@ -39,14 +42,28 @@ class WellbeingSwitch(WellbeingEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs):
         """Turn the switch on."""
-        await self.coordinator.api.set_feature_state(self.pnc_id, self._function, True)
+        ##clyde##
+        if self.get_entity.attr in ["verticalSwing", "cleanAirMode"]:
+            await self.coordinator.api.set_feature_state(self.pnc_id, self._function, "ON")
+        elif self.get_entity.attr in ["displayLight"]:
+            await self.coordinator.api.set_feature_state(self.pnc_id, self._function, "DISPLAY_LIGHT_1")
+        else:
+            await self.coordinator.api.set_feature_state(self.pnc_id, self._function, True)
+
         self._is_on = True
         self.async_write_ha_state()
         await self.coordinator.async_request_refresh()
 
     async def async_turn_off(self, **kwargs):
         """Turn the switch off."""
-        await self.coordinator.api.set_feature_state(self.pnc_id, self._function, False)
+        ##clyde##
+        if self.get_entity.attr in ["verticalSwing", "cleanAirMode"]:
+            await self.coordinator.api.set_feature_state(self.pnc_id, self._function, "OFF")
+        elif self.get_entity.attr in ["displayLight"]:
+            await self.coordinator.api.set_feature_state(self.pnc_id, self._function, "DISPLAY_LIGHT_0")
+        else:
+            await self.coordinator.api.set_feature_state(self.pnc_id, self._function, False)
+
         self._is_on = False
         self.async_write_ha_state()
         await self.coordinator.async_request_refresh()

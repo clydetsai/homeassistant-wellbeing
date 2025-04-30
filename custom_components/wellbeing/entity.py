@@ -1,5 +1,6 @@
 """WellbeingEntity class"""
 
+import logging
 from homeassistant.components.sensor import ENTITY_ID_FORMAT
 from homeassistant.const import EntityCategory
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -9,6 +10,7 @@ from .api import Appliance, ApplianceEntity
 from .const import DEFAULT_NAME
 from .const import DOMAIN
 
+_LOGGER: logging.Logger = logging.getLogger(__package__)
 
 class WellbeingEntity(CoordinatorEntity):
     def __init__(self, coordinator: WellbeingDataUpdateCoordinator, config_entry, pnc_id, entity_type, entity_attr):
@@ -51,10 +53,18 @@ class WellbeingEntity(CoordinatorEntity):
     @property
     def extra_state_attributes(self):
         """Return the state attributes."""
+        
+        ##clyde##
+        #for key, value in self.get_appliance.capabilities.items(): 
+        #    if value.get("access") == None:
+        #        _LOGGER.debug(f"key, value: {key, value}")
+
         return {
             "integration": DOMAIN,
             "capabilities": [
-                key for key, value in self.get_appliance.capabilities.items() if value["access"] == "readwrite"
+                ##clyde##
+                #key for key, value in self.get_appliance.capabilities.items() if value["access"] == "readwrite"
+                key for key, value in self.get_appliance.capabilities.items() if value.get("access") == "readwrite"
             ],
         }
 
