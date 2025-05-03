@@ -3,6 +3,7 @@
 import logging
 from enum import Enum
 
+from homeassistant.components.humidifier import HumidifierDeviceClass
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import (
@@ -161,6 +162,12 @@ class ApplianceSelect(ApplianceEntity):
     def __init__(self, name, attr) -> None:
         super().__init__(name, attr)
 
+class ApplianceHumidifier(ApplianceEntity):
+    entity_type: int = Platform.HUMIDIFIER
+
+    def __init__(self, name, attr, device_class=None) -> None:
+        super().__init__(name, attr, device_class)
+
 
 class Appliance:
     serialNumber: str
@@ -189,7 +196,8 @@ class Appliance:
             ),
             ApplianceSensor(name="Hepa Filter", attr="hepaFilterState", device_class=SensorDeviceClass.ENUM, entity_category=EntityCategory.DIAGNOSTIC),
             ApplianceSensor(name="Hepa Filter Life Time", attr="hepaFilterLifeTime", entity_category=EntityCategory.DIAGNOSTIC, unit=UnitOfTime.SECONDS, device_class=SensorDeviceClass.DURATION),
-            ApplianceSensor(name="Operative Mode", attr="operativeMode", device_class=SensorDeviceClass.ENUM),
+            #ApplianceSensor(name="Operative Mode", attr="operativeMode", device_class=SensorDeviceClass.ENUM),
+            ApplianceHumidifier(name="Operative Mode", attr="operativeMode", device_class=HumidifierDeviceClass.DEHUMIDIFIER),
             ApplianceSensor(name="Air Quality", attr="airQualityState", device_class=SensorDeviceClass.ENUM),
             ApplianceSensor(
                 name="Ambient Temperature (Fahrenheit)",

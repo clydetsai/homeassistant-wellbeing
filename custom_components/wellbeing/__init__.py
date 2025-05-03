@@ -31,6 +31,7 @@ PLATFORMS = [
     Platform.VACUUM,
     ##clyde##
     Platform.SELECT,
+    Platform.HUMIDIFIER,
 ]
 
 
