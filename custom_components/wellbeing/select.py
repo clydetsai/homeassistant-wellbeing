@@ -45,14 +45,6 @@ class WellbeingSelect(WellbeingEntity, SelectEntity):
     @property
     def select_option(self, option: str) -> None:
         _LOGGER.debug(f"##select_option:")
-        if option == "CONTINUOUS":
-            _LOGGER.debug(f"##select_option function: continuous")
-        elif option == "DRY":
-            _LOGGER.debug(f"##select_option function: dry")
-        elif option == "PURIFY":
-            _LOGGER.debug(f"##select_option function: purify")
-        else:
-            _LOGGER.debug(f"##select_option function: complete")
 
     async def async_select_option(self, option: str) -> None:
         _LOGGER.debug(f"##async_select_option")
@@ -61,13 +53,26 @@ class WellbeingSelect(WellbeingEntity, SelectEntity):
             return
             
         if option == OperationFunction.CONTINUOUS:
-            _LOGGER.debug(f"##async_select_option function: continuous")            
+            _LOGGER.debug(f"##async_select_option function: continuous")
+            humidifiers = self.hass.data[DOMAIN].get("humidifier_entities", [])
+            for humidifier in humidifiers:
+                if humidifier.pnc_id == self.pnc_id:
+                    await humidifier.async_set_humidity(30, 1)
+                    #self.async_write_ha_state()
+
         elif option == OperationFunction.DRY:
             _LOGGER.debug(f"##async_select_option function: dry")
         elif option == OperationFunction.PURIFY:
             _LOGGER.debug(f"##async_select_option function: purify")
         elif option == OperationFunction.COMPLETE:
             _LOGGER.debug(f"##async_select_option function: complete")
+            if self._attr_current_option == OperationFunction.CONTINUOUS:
+                _LOGGER.debug(f"##async_select_option function: set to 35")
+                humidifiers = self.hass.data[DOMAIN].get("humidifier_entities", [])
+                for humidifier in humidifiers:
+                    if humidifier.pnc_id == self.pnc_id:
+                        await humidifier.async_set_humidity(35, 1)
+                        #self.async_write_ha_state()
         else:
             _LOGGER.debug(f"##async_select_option function: unknow funcion, return.")
             return

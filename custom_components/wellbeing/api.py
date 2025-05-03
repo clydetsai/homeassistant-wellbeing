@@ -168,7 +168,6 @@ class ApplianceHumidifier(ApplianceEntity):
     def __init__(self, name, attr, device_class=None) -> None:
         super().__init__(name, attr, device_class)
 
-
 class Appliance:
     serialNumber: str
     brand: str
@@ -178,6 +177,7 @@ class Appliance:
     entities: list
     capabilities: dict
     model: Model
+
 
     def __init__(self, name, pnc_id, model) -> None:
         self.model = Model(model)
@@ -732,8 +732,16 @@ class WellbeingApiClient:
         data = {"mode": mode}
         appliance = self._api_appliances.get(pnc_id, None)
         if appliance is None:
-            _LOGGER.error(f"Failed to set work mode for appliance with id {pnc_id}")
+            _LOGGER.error(f"set_operation_funciton(): Failed to get appliance with id {pnc_id}")
             return
         _LOGGER.debug(f"####command: {data}")
         await appliance.send_command(data)
 
+    async def set_target_humidity(self, pnc_id: str, target: int):
+        data = {"targetHumidity": target}
+        appliance = self._api_appliances.get(pnc_id, None)
+        if appliance is None:
+            _LOGGER.error(f"set_target_humidity(): Failed to get appliance with id {pnc_id}")
+            return
+        _LOGGER.debug(f"####command: {data}")
+        await appliance.send_command(data)

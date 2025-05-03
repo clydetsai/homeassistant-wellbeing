@@ -54,11 +54,6 @@ class WellbeingEntity(CoordinatorEntity):
     def extra_state_attributes(self):
         """Return the state attributes."""
         
-        ##clyde##
-        #for key, value in self.get_appliance.capabilities.items(): 
-        #    if value.get("access") == None:
-        #        _LOGGER.debug(f"key, value: {key, value}")
-
         return {
             "integration": DOMAIN,
             "capabilities": [
