@@ -38,6 +38,8 @@ class WellbeingSwitch(WellbeingEntity, SwitchEntity):
     @property
     def is_on(self):
         """Return true if switch is on."""
+        if self._is_on != self.get_entity.state:
+            self._is_on = self.get_entity.state
         return self._is_on
 
     async def async_turn_on(self, **kwargs):

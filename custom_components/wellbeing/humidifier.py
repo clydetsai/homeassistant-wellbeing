@@ -48,15 +48,9 @@ class WellbeingHumidifier(WellbeingEntity, HumidifierEntity):
         self.min_humidity = 30
         self.available_modes = [WorkMode.AUTOMATIC, WorkMode.MANUAL, WorkMode.QUIET]
         self.mode = self.get_entity.state # one of mode from available_modes
-        if self.get_appliance.get_entity(Platform.BINARY_SENSOR, "applianceState").state:
-            if self.get_appliance.get_entity(Platform.SELECT, "mode").state == OperationFunction.PURIFY:
-                self.action = HumidifierAction.IDLE
-            else:
-                self.action = HumidifierAction.DRYING
-        else:
-            self.action = HumidifierAction.OFF
         self._nexttime_target_humidity = 45
         self._target_humidity = self.get_appliance.get_entity(Platform.SENSOR, "targetHumidity").state
+        self._action = HumidifierAction.OFF
 
     @property
     def target_humidity(self):
@@ -70,6 +64,17 @@ class WellbeingHumidifier(WellbeingEntity, HumidifierEntity):
         #if self.get_appliance.get_entity(Platform.SELECT, "mode").state == OperationFunction.CONTINUOUS:
         #    self._target_humidity = 30
         return self._target_humidity
+
+    @property
+    def action(self):
+        if self.get_appliance.get_entity(Platform.BINARY_SENSOR, "applianceState").state:
+            if self.get_appliance.get_entity(Platform.SELECT, "mode").state == OperationFunction.PURIFY:
+                self._action = HumidifierAction.IDLE
+            else:
+                self._action = HumidifierAction.DRYING
+        else:
+            self._action = HumidifierAction.OFF
+        return self._action
 
     @property
     def is_on(self):
@@ -130,10 +135,6 @@ class WellbeingHumidifier(WellbeingEntity, HumidifierEntity):
     async def async_turn_on(self, **kwargs) -> None:
         _LOGGER.debug(f"##WellbeingHumidifier.async_turn_on(): turn on")
         await self.api.set_work_mode(self.pnc_id, WorkMode.POWERON)
-        if OperationFunction(self.get_appliance.get_entity(Platform.SELECT, "mode").state) == OperationFunction.PURIFY:
-            self.action = HumidifierAction.IDLE
-        else:
-            self.action = HumidifierAction.DRYING
         self.async_write_ha_state()
         await asyncio.sleep(10)
         await self.coordinator.async_request_refresh()
@@ -141,7 +142,6 @@ class WellbeingHumidifier(WellbeingEntity, HumidifierEntity):
     async def async_turn_off(self, **kwargs) -> None:
         _LOGGER.debug(f"##WellbeingHumidifier.async_turn_off(): turn off")
         await self.api.set_work_mode(self.pnc_id, WorkMode.OFF)
-        self.action = HumidifierAction.OFF
         self.async_write_ha_state()
         await asyncio.sleep(10)
         await self.coordinator.async_request_refresh()

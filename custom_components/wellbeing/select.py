@@ -37,18 +37,21 @@ class WellbeingSelect(WellbeingEntity, SelectEntity):
     def __init__(self, coordinator, config_entry, pnc_id, entity_type, entity_attr):
         super().__init__(coordinator, config_entry, pnc_id, entity_type, entity_attr)
         _LOGGER.debug(f"##current function is:{self.get_entity.state}")
-        self._attr_current_option = self.get_entity.state
-        self._attr_options = [OperationFunction.COMPLETE, OperationFunction.CONTINUOUS, OperationFunction.DRY, OperationFunction.PURIFY]
+        self._current_option = self.get_entity.state
+        self.options = [OperationFunction.COMPLETE, OperationFunction.CONTINUOUS, OperationFunction.DRY, OperationFunction.PURIFY]
 
 
 
     @property
-    def select_option(self, option: str) -> None:
-        _LOGGER.debug(f"##select_option:")
+    def current_option(self):
+        if self._current_option != self.get_entity.state:
+            self._current_option = self.get_entity.state
+        return self._current_option
+    
 
     async def async_select_option(self, option: str) -> None:
         _LOGGER.debug(f"##async_select_option")
-        if self._attr_current_option == option:
+        if self._current_option == option:
             _LOGGER.debug(f"##async_select_option function: same function, no change, return.")
             return
             
@@ -66,7 +69,7 @@ class WellbeingSelect(WellbeingEntity, SelectEntity):
             _LOGGER.debug(f"##async_select_option function: purify")
         elif option == OperationFunction.COMPLETE:
             _LOGGER.debug(f"##async_select_option function: complete")
-            if self._attr_current_option == OperationFunction.CONTINUOUS:
+            if self._current_option == OperationFunction.CONTINUOUS:
                 _LOGGER.debug(f"##async_select_option function: set to 35")
                 humidifiers = self.hass.data[DOMAIN].get("humidifier_entities", [])
                 for humidifier in humidifiers:
@@ -77,7 +80,7 @@ class WellbeingSelect(WellbeingEntity, SelectEntity):
             _LOGGER.debug(f"##async_select_option function: unknow funcion, return.")
             return
 
-        self._attr_current_option = option
+        self._current_option = option
 
         await self.api.set_operation_function(self.pnc_id, option)
 
