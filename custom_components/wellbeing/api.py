@@ -76,7 +76,6 @@ class OperationFunction(str, Enum):
     DRY = "DRY"
     PURIFY = "PURIFY"
 
-
 class LouverSwingMode(str, Enum):
     OFF = "off"
     NARROW = "narrow"
@@ -125,9 +124,11 @@ class ApplianceSensor(ApplianceEntity):
         device_class=None,
         entity_category: EntityCategory = UNDEFINED,
         state_class: SensorStateClass | str | None = None,
+        options=None
     ) -> None:
         super().__init__(name, attr, device_class, entity_category, state_class)
         self.unit = unit
+        self.options = options
 
 
 class ApplianceFan(ApplianceEntity):
@@ -194,11 +195,11 @@ class Appliance:
                 device_class=SensorDeviceClass.PM25,
                 state_class=SensorStateClass.MEASUREMENT,
             ),
-            ApplianceSensor(name="Hepa Filter", attr="hepaFilterState", device_class=SensorDeviceClass.ENUM, entity_category=EntityCategory.DIAGNOSTIC),
+            ApplianceSensor(name="Hepa Filter", attr="hepaFilterState", device_class=SensorDeviceClass.ENUM, entity_category=EntityCategory.DIAGNOSTIC, options=["BUY", "CHANGE", "GOOD"]),
             ApplianceSensor(name="Hepa Filter Life Time", attr="hepaFilterLifeTime", entity_category=EntityCategory.DIAGNOSTIC, unit=UnitOfTime.SECONDS, device_class=SensorDeviceClass.DURATION),
             #ApplianceSensor(name="Operative Mode", attr="operativeMode", device_class=SensorDeviceClass.ENUM),
             ApplianceHumidifier(name="Operative Mode", attr="operativeMode", device_class=HumidifierDeviceClass.DEHUMIDIFIER),
-            ApplianceSensor(name="Air Quality", attr="airQualityState", device_class=SensorDeviceClass.ENUM),
+            ApplianceSensor(name="Air Quality", attr="airQualityState", device_class=SensorDeviceClass.ENUM, options=["GOOD", "AVERAGE", "POOR", "VERY_POOR"]),
             ApplianceSensor(
                 name="Ambient Temperature (Fahrenheit)",
                 attr="ambientTemperatureF",
