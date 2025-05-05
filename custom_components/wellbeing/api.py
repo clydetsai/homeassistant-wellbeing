@@ -500,10 +500,8 @@ class Appliance:
             self.firmware = data.get("applianceUiSwVersion")
         if "Workmode" in data:
             self.mode = WorkMode(data.get("Workmode"))
-        ##clyde##
         if "operativeMode" in data:
             self.mode = WorkMode(data.get("operativeMode"))
-
         if "LouverSwingWorkmode" in data:
             self.louver_swing_mode = LouverSwingMode(data.get("LouverSwing"))
         if "powerMode" in data:
@@ -513,6 +511,12 @@ class Appliance:
 
         self.capabilities = capabilities
         self.entities = [entity.setup(data) for entity in Appliance._create_entities(data) if entity.attr in data]
+
+        # for better log graph
+        if self.model == Model.UltimateHome700:
+            pm25E = self.get_entity(Platform.SENSOR, "pm25")
+            if pm25E._state == 65535:
+                pm25E._state = 0
 
     @property
     def preset_modes(self) -> list[WorkMode]:
