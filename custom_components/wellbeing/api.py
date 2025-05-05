@@ -3,6 +3,7 @@
 import logging
 from enum import Enum
 
+from homeassistant.components.humidifier import HumidifierDeviceClass
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import (
@@ -73,7 +74,6 @@ class OperationFunction(str, Enum):
     DRY = "DRY"
     PURIFY = "PURIFY"
 
-
 class LouverSwingMode(str, Enum):
     OFF = "off"
     NARROW = "narrow"
@@ -122,9 +122,11 @@ class ApplianceSensor(ApplianceEntity):
         device_class=None,
         entity_category: EntityCategory = UNDEFINED,
         state_class: SensorStateClass | str | None = None,
+        options=None
     ) -> None:
         super().__init__(name, attr, device_class, entity_category, state_class)
         self.unit = unit
+        self.options = options
 
 
 class ApplianceFan(ApplianceEntity):
@@ -157,6 +159,11 @@ class ApplianceSelect(ApplianceEntity):
     def __init__(self, name, attr) -> None:
         super().__init__(name, attr)
 
+class ApplianceHumidifier(ApplianceEntity):
+    entity_type: int = Platform.HUMIDIFIER
+
+    def __init__(self, name, attr, device_class=None) -> None:
+        super().__init__(name, attr, device_class)
 
 class Appliance:
     serialNumber: str
@@ -167,6 +174,7 @@ class Appliance:
     entities: list
     capabilities: dict
     model: Model
+
 
     def __init__(self, name, pnc_id, model) -> None:
         self.model = Model(model)
@@ -183,10 +191,11 @@ class Appliance:
                 device_class=SensorDeviceClass.PM25,
                 state_class=SensorStateClass.MEASUREMENT,
             ),
-            ApplianceSensor(name="Hepa Filter", attr="hepaFilterState", device_class=SensorDeviceClass.ENUM, entity_category=EntityCategory.DIAGNOSTIC),
+            ApplianceSensor(name="Hepa Filter", attr="hepaFilterState", device_class=SensorDeviceClass.ENUM, entity_category=EntityCategory.DIAGNOSTIC, options=["BUY", "CHANGE", "GOOD"]),
             ApplianceSensor(name="Hepa Filter Life Time", attr="hepaFilterLifeTime", entity_category=EntityCategory.DIAGNOSTIC, unit=UnitOfTime.SECONDS, device_class=SensorDeviceClass.DURATION),
-            ApplianceSensor(name="Operative Mode", attr="operativeMode", device_class=SensorDeviceClass.ENUM),
-            ApplianceSensor(name="Air Quality", attr="airQualityState", device_class=SensorDeviceClass.ENUM),
+            #ApplianceSensor(name="Operative Mode", attr="operativeMode", device_class=SensorDeviceClass.ENUM),
+            ApplianceHumidifier(name="Operative Mode", attr="operativeMode", device_class=HumidifierDeviceClass.DEHUMIDIFIER),
+            ApplianceSensor(name="Air Quality", attr="airQualityState", device_class=SensorDeviceClass.ENUM, options=["GOOD", "AVERAGE", "POOR", "VERY_POOR"]),
             ApplianceSensor(
                 name="Ambient Temperature (Fahrenheit)",
                 attr="ambientTemperatureF",
@@ -482,6 +491,12 @@ class Appliance:
         self.capabilities = capabilities
         self.entities = [entity.setup(data) for entity in Appliance._create_entities(data) if entity.attr in data]
 
+        # for better log graph
+        if self.model == Model.UltimateHome700:
+            pm25E = self.get_entity(Platform.SENSOR, "pm25")
+            if pm25E._state == 65535:
+                pm25E._state = 0
+
     @property
     def preset_modes(self) -> list[WorkMode]:
         if self.model == Model.Muju:
@@ -690,8 +705,16 @@ class WellbeingApiClient:
         data = {"mode": mode}
         appliance = self._api_appliances.get(pnc_id, None)
         if appliance is None:
-            _LOGGER.error(f"Failed to set work mode for appliance with id {pnc_id}")
+            _LOGGER.error(f"set_operation_funciton(): Failed to get appliance with id {pnc_id}")
             return
         _LOGGER.debug(f"####command: {data}")
         await appliance.send_command(data)
 
+    async def set_target_humidity(self, pnc_id: str, target: int):
+        data = {"targetHumidity": target}
+        appliance = self._api_appliances.get(pnc_id, None)
+        if appliance is None:
+            _LOGGER.error(f"set_target_humidity(): Failed to get appliance with id {pnc_id}")
+            return
+        _LOGGER.debug(f"####command: {data}")
+        await appliance.send_command(data)

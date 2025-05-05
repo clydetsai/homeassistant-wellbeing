@@ -19,7 +19,7 @@ async def async_setup_entry(hass, entry, async_add_devices):
         for pnc_id, appliance in appliances.appliances.items():
             async_add_devices(
                 [
-                    WellbeingSensor(coordinator, entry, pnc_id, entity.entity_type, entity.attr)
+                    WellbeingSensor(coordinator, entry, pnc_id, entity.entity_type, entity.attr, entity.options)
                     for entity in appliance.entities
                     if entity.entity_type == Platform.SENSOR
                 ]
@@ -28,6 +28,10 @@ async def async_setup_entry(hass, entry, async_add_devices):
 
 class WellbeingSensor(WellbeingEntity, SensorEntity):
     """wellbeing Sensor class."""
+    def __init__(self, coordinator, config_entry, pnc_id, entity_type, entity_attr, entity_options = None):
+        super().__init__(coordinator, config_entry, pnc_id, entity_type, entity_attr)
+        if entity_options != None:
+            self.options = entity_options
 
     @property
     def native_value(self):

@@ -30,6 +30,7 @@ PLATFORMS = [
     Platform.SWITCH,
     Platform.VACUUM,
     Platform.SELECT,
+    Platform.HUMIDIFIER,
 ]
 
 
