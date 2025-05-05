@@ -47,10 +47,10 @@ class WellbeingHumidifier(WellbeingEntity, HumidifierEntity):
         self.max_humidity = 85
         self.min_humidity = 30
         self.available_modes = [WorkMode.AUTOMATIC, WorkMode.MANUAL, WorkMode.QUIET]
-        self.mode = self.get_entity.state # one of mode from available_modes
         self._nexttime_target_humidity = 45
         self._target_humidity = self.get_appliance.get_entity(Platform.SENSOR, "targetHumidity").state
         self._action = HumidifierAction.OFF
+        self._mode = self.get_appliance.mode
 
     @property
     def target_humidity(self):
@@ -59,7 +59,7 @@ class WellbeingHumidifier(WellbeingEntity, HumidifierEntity):
         _LOGGER.debug(f"##WellbeingHumidifier.checking target humidity: current function = {self.get_appliance.get_entity(Platform.SELECT, "mode").state}")
         self.current_humidity = self.get_appliance.get_entity(Platform.SENSOR, "sensorHumidity").state
         published_targetHumidity = self.get_appliance.get_entity(Platform.SENSOR, "targetHumidity").state
-        if self.mode != WorkMode.MANUAL and published_targetHumidity != self._target_humidity:
+        if self._mode != WorkMode.MANUAL and published_targetHumidity != self._target_humidity:
             self._target_humidity = 45
         #if self.get_appliance.get_entity(Platform.SELECT, "mode").state == OperationFunction.CONTINUOUS:
         #    self._target_humidity = 30
@@ -81,6 +81,12 @@ class WellbeingHumidifier(WellbeingEntity, HumidifierEntity):
         # entity of applianceState already return true or false
         return self.get_appliance.get_entity(Platform.BINARY_SENSOR, "applianceState").state
 
+    @property
+    def mode(self):
+        if self.get_appliance.mode == WorkMode.UNDEFINED:
+            return self._mode
+        else:
+            return self.get_appliance.mode
     
     async def async_set_mode(self, mode: str) -> None:
         #_LOGGER.debug(f"##WellbeingHumidifier.async_set_mode(): set mode from {self.mode} to {targetMode}")
@@ -90,13 +96,12 @@ class WellbeingHumidifier(WellbeingEntity, HumidifierEntity):
             self._target_humidity = 45
         else: # when switch to MANUAL, call back _nexttime_target_humidity
             self._target_humidity = self._nexttime_target_humidity
-
-        await self.api.set_work_mode(self.pnc_id, WorkMode(mode))
-        self.mode = mode
+        self._mode = WorkMode(mode)
+        self.get_appliance.set_mode(self._mode)
         self.async_write_ha_state()
+        await self.api.set_work_mode(self.pnc_id, self._mode)
         await asyncio.sleep(10)
         await self.coordinator.async_request_refresh()
-
 
     async def async_set_humidity(self, humidity: int, functionFlag: int = 0) -> None:
         _LOGGER.debug(f"##WellbeingHumidifier.async_set_humidity():")
@@ -116,11 +121,10 @@ class WellbeingHumidifier(WellbeingEntity, HumidifierEntity):
         if functionFlag == 1:
             _LOGGER.debug(f"##async_set_humidity(): funciton changing, set to {humidity}")
             self._target_humidity = humidity
-            #self.async_write_ha_state()
             return
 
         # change to MANUAL when current mode is not MANUAL
-        if self.mode != WorkMode.MANUAL:
+        if self._mode != WorkMode.MANUAL:
             _LOGGER.debug(f"##async_set_humidity(): not in MANUAL, set to MANUAL")
             await self.async_set_mode(WorkMode.MANUAL)
 
