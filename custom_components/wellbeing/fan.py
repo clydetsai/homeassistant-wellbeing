@@ -9,7 +9,6 @@ from homeassistant.const import Platform
 from homeassistant.util.percentage import percentage_to_ranged_value, ranged_value_to_percentage
 
 from . import WellbeingDataUpdateCoordinator
-##clyde##
 from .api import Model
 
 from .api import WorkMode
@@ -62,8 +61,6 @@ class WellbeingFan(WellbeingEntity, FanEntity):
         if self._preset_mode == WorkMode.OFF:
             speed = 0
         else:
-            ##clyde##
-            #speed = self._speed if self.get_entity.state is None else self.get_entity.state
             if self.get_appliance.model == Model.UltimateHome700:
                 _LOGGER.debug(f"##checking percentage...")
                 _LOGGER.debug(f"##self.get_appliance.get_entity(Platform.SENSOR, 'fanSpeedState').state={self.get_appliance.get_entity(Platform.SENSOR, "fanSpeedState").state}")
@@ -88,7 +85,6 @@ class WellbeingFan(WellbeingEntity, FanEntity):
         """Set the speed percentage of the fan."""
         self._speed = math.ceil(percentage_to_ranged_value(self._speed_range, percentage))
         
-        ##clyde##
         if self.get_appliance.model == Model.UltimateHome700:
             _LOGGER.debug(f"##setting percentage...")
             _LOGGER.debug(f"##self.speed: {self._speed} percentage: {percentage}")
@@ -141,14 +137,12 @@ class WellbeingFan(WellbeingEntity, FanEntity):
 
     @property
     def is_on(self):
-        ##clyde##
         if self.get_appliance.model == Model.UltimateHome700:
             currentState = self.get_appliance.get_entity(Platform.BINARY_SENSOR, "applianceState").state
             return currentState
         return self.preset_mode != WorkMode.OFF
 
     async def async_turn_on(self, percentage: int | None = None, preset_mode: str | None = None, **kwargs) -> None:
-        ##clyde##
         if self.get_appliance.model == Model.UltimateHome700:
             _LOGGER.debug(f"##turn on...")
             await self.api.set_work_mode(self.pnc_id, WorkMode.POWERON)
@@ -178,7 +172,6 @@ class WellbeingFan(WellbeingEntity, FanEntity):
 
     async def async_turn_off(self, **kwargs) -> None:
         """Turn off the entity."""
-        ##clyde##
         if self.get_appliance.model == Model.UltimateHome700:
             _LOGGER.debug(f"##turn off...")
         else:

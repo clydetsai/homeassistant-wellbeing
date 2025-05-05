@@ -29,7 +29,6 @@ PLATFORMS = [
     Platform.BINARY_SENSOR,
     Platform.SWITCH,
     Platform.VACUUM,
-    ##clyde##
     Platform.SELECT,
 ]
 

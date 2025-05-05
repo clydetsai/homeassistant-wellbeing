@@ -11,8 +11,6 @@ async def async_setup_entry(hass, entry, async_add_devices):
     coordinator = hass.data[DOMAIN][entry.entry_id]
     appliances = coordinator.data.get("appliances", None)
     
-    ##clyde##
-    #capabilities = ["Ionizer", "UILight", "SafetyLock"]
     capabilities = ["Ionizer", "UILight", "SafetyLock", "cleanAirMode", "uiLockMode", "verticalSwing", "displayLight"]
 
     if appliances is not None:
@@ -42,7 +40,6 @@ class WellbeingSwitch(WellbeingEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs):
         """Turn the switch on."""
-        ##clyde##
         if self.get_entity.attr in ["verticalSwing", "cleanAirMode"]:
             await self.coordinator.api.set_feature_state(self.pnc_id, self._function, "ON")
         elif self.get_entity.attr in ["displayLight"]:
@@ -56,7 +53,6 @@ class WellbeingSwitch(WellbeingEntity, SwitchEntity):
 
     async def async_turn_off(self, **kwargs):
         """Turn the switch off."""
-        ##clyde##
         if self.get_entity.attr in ["verticalSwing", "cleanAirMode"]:
             await self.coordinator.api.set_feature_state(self.pnc_id, self._function, "OFF")
         elif self.get_entity.attr in ["displayLight"]:
